@@ -1,0 +1,8 @@
+services:
+  rosseti-parser:
+    build: .
+    container_name: rosseti-parser
+    env_file: .env
+    restart: ${DOCKER_RESTART:-unless-stopped}
+    environment:
+      MODE: ${MODE:-daemon}
