@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from rosseti_parser.config import get_mqtt_settings
-from rosseti_parser.output.mqtt import publish_payload
+from rosseti_parser.output.mqtt import publish_payload, publish_status
 
 
 class TestMqtt(unittest.TestCase):
@@ -35,6 +35,7 @@ class TestMqtt(unittest.TestCase):
             self.assertEqual(settings.host, "192.168.1.1")
             self.assertEqual(settings.port, 1883)
             self.assertEqual(settings.topic, "rosseti/meter")
+            self.assertEqual(settings.status_topic, "rosseti/meter/status")
             self.assertEqual(settings.username, "user")
             self.assertEqual(settings.password, "pass")
             self.assertTrue(settings.retain)
@@ -46,12 +47,25 @@ class TestMqtt(unittest.TestCase):
             published = publish_payload(payload)
 
         self.assertTrue(published)
+        self.assertEqual(mock_single.call_count, 2)
+
+        payload_call = mock_single.call_args_list[0]
+        status_call = mock_single.call_args_list[1]
+        self.assertEqual(payload_call.args[0], "rosseti/meter")
+        self.assertEqual(json.loads(payload_call.kwargs["payload"]), payload)
+        self.assertEqual(status_call.args[0], "rosseti/meter/status")
+        self.assertEqual(status_call.kwargs["payload"], "online")
+        self.assertTrue(status_call.kwargs["retain"])
+
+    @patch("rosseti_parser.output.mqtt.publish.single")
+    def test_publish_status(self, mock_single):
+        with patch.dict(os.environ, {"MQTT_HOST": "192.168.1.1"}, clear=True):
+            published = publish_status()
+
+        self.assertTrue(published)
         mock_single.assert_called_once()
-        call_args = mock_single.call_args
-        self.assertEqual(call_args.args[0], "rosseti/meter")
-        self.assertEqual(call_args.kwargs["hostname"], "192.168.1.1")
-        self.assertEqual(call_args.kwargs["port"], 1883)
-        self.assertEqual(json.loads(call_args.kwargs["payload"]), payload)
+        self.assertEqual(mock_single.call_args.args[0], "rosseti/meter/status")
+        self.assertEqual(mock_single.call_args.kwargs["payload"], "online")
 
     @patch("rosseti_parser.output.mqtt.publish.single")
     def test_publish_skipped_when_not_configured(self, mock_single):

@@ -1,0 +1,104 @@
+# Home Assistant package: MQTT sensors for rosseti-parser
+#
+# Вариант 1 — положить файл в config/packages/rosseti_meter.yaml
+# и включить packages в configuration.yaml:
+#
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Вариант 2 — явный include:
+#
+#   homeassistant:
+#     packages:
+#       rosseti_meter: !include rosseti/rosseti_meter.yaml
+#
+# Device grouping: all entities share device.identifiers "rosseti_meter".
+# Full device metadata is defined once on the first sensor; others only
+# reference the same identifier — HA merges them into one device.
+
+mqtt:
+  sensor:
+    - name: "Россети Т1"
+      unique_id: rosseti_t1
+      state_topic: "rosseti/meter"
+      value_template: "{{ value_json.t1 }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      suggested_display_precision: 0
+      icon: mdi:flash
+      expire_after: 93600
+      availability_topic: "rosseti/meter/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device:
+        identifiers:
+          - "rosseti_meter"
+        name: "Счётчик Россети"
+        manufacturer: "Россети Московский регион"
+        model: "Двухтарифный"
+        sw_version: "rosseti-parser"
+      json_attributes_template: >
+        {
+          "reading_date": "{{ value_json.reading_date }}",
+          "received_at": "{{ value_json.received_at }}",
+          "transmitted_by": "{{ value_json.transmitted_by }}",
+          "source": "{{ value_json.source }}"
+        }
+
+    - name: "Россети Т2"
+      unique_id: rosseti_t2
+      state_topic: "rosseti/meter"
+      value_template: >
+        {% if value_json.t2 is none %}
+          unknown
+        {% else %}
+          {{ value_json.t2 }}
+        {% endif %}
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      suggested_display_precision: 0
+      icon: mdi:flash-outline
+      expire_after: 93600
+      availability_topic: "rosseti/meter/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device:
+        identifiers:
+          - "rosseti_meter"
+      json_attributes_template: >
+        {
+          "reading_date": "{{ value_json.reading_date }}",
+          "received_at": "{{ value_json.received_at }}",
+          "transmitted_by": "{{ value_json.transmitted_by }}",
+          "source": "{{ value_json.source }}"
+        }
+
+    - name: "Россети дата показания"
+      unique_id: rosseti_reading_date
+      state_topic: "rosseti/meter"
+      value_template: "{{ value_json.reading_date }}"
+      icon: mdi:calendar
+      entity_category: diagnostic
+      expire_after: 93600
+      availability_topic: "rosseti/meter/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device:
+        identifiers:
+          - "rosseti_meter"
+
+    - name: "Россети источник"
+      unique_id: rosseti_transmitted_by
+      state_topic: "rosseti/meter"
+      value_template: "{{ value_json.transmitted_by }}"
+      icon: mdi:account-arrow-up
+      entity_category: diagnostic
+      expire_after: 93600
+      availability_topic: "rosseti/meter/status"
+      payload_available: "online"
+      payload_not_available: "offline"
+      device:
+        identifiers:
+          - "rosseti_meter"

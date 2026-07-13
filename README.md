@@ -58,6 +58,7 @@ python -m rosseti_parser --env-file .env
 | `MQTT_HOST` | нет* | IP/hostname Mosquitto. Если задан — publish после каждого запуска |
 | `MQTT_PORT` | нет | Порт MQTT. По умолчанию: `1883` |
 | `MQTT_TOPIC` | нет | Topic. По умолчанию: `rosseti/meter` |
+| `MQTT_STATUS_TOPIC` | нет | Status topic. По умолчанию: `{MQTT_TOPIC}/status` |
 | `MQTT_USER` | нет | Логин MQTT |
 | `MQTT_PASSWORD` | нет | Пароль MQTT |
 | `MQTT_RETAIN` | нет | `true`/`false`. По умолчанию: `true` |
@@ -100,39 +101,33 @@ MQTT_RETAIN=true
 
 ## Home Assistant
 
-MQTT sensors (`configuration.yaml`):
+Конфиг MQTT-сенсоров (package): [`homeassistant/rosseti_meter.yaml`](homeassistant/rosseti_meter.yaml)
+
+**Вариант 1 — каталог `packages/`** (удобнее):
+
+1. Скопировать файл в `config/packages/rosseti_meter.yaml`
+2. В `configuration.yaml` включить packages (если ещё не включены):
 
 ```yaml
-mqtt:
-  sensor:
-    - name: "Россети Т1"
-      unique_id: rosseti_t1
-      state_topic: "rosseti/meter"
-      value_template: "{{ value_json.t1 }}"
-      unit_of_measurement: "kWh"
-      device_class: energy
-      state_class: total_increasing
-      json_attributes_template: >
-        {
-          "reading_date": "{{ value_json.reading_date }}",
-          "received_at": "{{ value_json.received_at }}",
-          "transmitted_by": "{{ value_json.transmitted_by }}"
-        }
-
-    - name: "Россети Т2"
-      unique_id: rosseti_t2
-      state_topic: "rosseti/meter"
-      value_template: "{{ value_json.t2 }}"
-      unit_of_measurement: "kWh"
-      device_class: energy
-      state_class: total_increasing
-      json_attributes_template: >
-        {
-          "reading_date": "{{ value_json.reading_date }}",
-          "received_at": "{{ value_json.received_at }}",
-          "transmitted_by": "{{ value_json.transmitted_by }}"
-        }
+homeassistant:
+  packages: !include_dir_named packages
 ```
+
+**Вариант 2 — явный include:**
+
+```yaml
+homeassistant:
+  packages:
+    rosseti_meter: !include rosseti/rosseti_meter.yaml
+```
+
+После изменений: **Настройки → Система → Проверить конфигурацию → Перезагрузить YAML MQTT** (или перезапуск HA).
+
+Сенсоры объединены в одно устройство **«Счётчик Россети»** через общий `device.identifiers`. Полное описание device — только у первого сенсора; остальные ссылаются на тот же ID.
+
+Парсер публикует:
+- `rosseti/meter` — JSON с показаниями
+- `rosseti/meter/status` — `online` (retain) после каждого успешного run
 
 ## Деплой на Proxmox
 

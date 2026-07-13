@@ -38,6 +38,7 @@ class MqttSettings:
     host: str
     port: int
     topic: str
+    status_topic: str
     username: str | None
     password: str | None
     retain: bool
@@ -67,11 +68,16 @@ def get_mqtt_settings() -> MqttSettings | None:
     topic = os.environ.get("MQTT_TOPIC", "rosseti/meter")
     if not topic.strip():
         raise RuntimeError("MQTT_TOPIC must not be empty")
+    topic = topic.strip()
+    status_topic = os.environ.get("MQTT_STATUS_TOPIC", f"{topic}/status").strip()
+    if not status_topic:
+        raise RuntimeError("MQTT_STATUS_TOPIC must not be empty")
 
     return MqttSettings(
         host=host.strip(),
         port=port,
-        topic=topic.strip(),
+        topic=topic,
+        status_topic=status_topic,
         username=os.environ.get("MQTT_USER") or None,
         password=os.environ.get("MQTT_PASSWORD") or None,
         retain=_env_bool("MQTT_RETAIN", True),

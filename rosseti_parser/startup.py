@@ -18,6 +18,7 @@ class StartupSummary:
     mqtt_host: str | None = None
     mqtt_port: int | None = None
     mqtt_topic: str | None = None
+    mqtt_status_topic: str | None = None
     mqtt_user: str | None = None
     mqtt_retain: bool | None = None
     schedule: tuple[str, ...] | None = None
@@ -60,6 +61,7 @@ def validate_startup(daemon: bool) -> StartupSummary:
         mqtt_host=mqtt.host if mqtt else None,
         mqtt_port=mqtt.port if mqtt else None,
         mqtt_topic=mqtt.topic if mqtt else None,
+        mqtt_status_topic=mqtt.status_topic if mqtt else None,
         mqtt_user=mqtt.username if mqtt else None,
         mqtt_retain=mqtt.retain if mqtt else None,
         schedule=schedule_labels,
@@ -74,10 +76,11 @@ def log_startup(summary: StartupSummary) -> None:
     if summary.mqtt_enabled:
         auth = f" user={summary.mqtt_user}" if summary.mqtt_user else ""
         logger.info(
-            "MQTT enabled: %s:%s/%s retain=%s%s",
+            "MQTT enabled: %s:%s/%s status=%s retain=%s%s",
             summary.mqtt_host,
             summary.mqtt_port,
             summary.mqtt_topic,
+            summary.mqtt_status_topic,
             summary.mqtt_retain,
             auth,
         )
